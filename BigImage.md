@@ -10,3 +10,5 @@ To use, in your dashboard.erb file:
     </li>
 
 You can update the image via a background job or API key.  Whenever the image laods, the image will be resized to fit the dimensions of the widget.  If `data-max="false"`, then the image will never be enlarged.
+
+This also supports imgur .mp4 and .gifv files.

@@ -1,18 +1,33 @@
+# A Dashing widget which shows an image.
+#
+# To use, in your dashboard.erb file:
+#
+#     <li data-row="1" data-col="1" data-sizex="3" data-sizey="2">
+#       <div data-id="picture" data-view="BigImage" data-image="http://i.imgur.com/JycUgrg.jpg"
+#         style="background-color:transparent;"
+#         data-max="true"
+#       ></div>
+#     </li>
+#
+# You can update the image via a background job or API key.  Whenever the image laods, the image
+# will be resized to fit the dimensions of the widget.  If `data-max="false"`, then the image
+# will never be enlarged.
+#
 class Dashing.BigImage extends Dashing.Widget
 
+    endsWith = (str, suffix) -> str.indexOf(suffix, str.length - suffix.length) isnt -1
+
+    # Courtesy @mr-deamon
     resizeImage = ($img, maxWidth, maxHeight, maximize) ->
         width = $img.width()
         height = $img.height()
+        delta_x = width-maxWidth
+        delta_y = height-maxHeight
 
-        if maximize or (width > maxWidth) or (height > maxHeight)
-            if width > height
-                ratio = maxWidth / width
-                $img.css("width", maxWidth)
-                $img.css("height", height * ratio)
-            else
-                ratio = maxHeight / height
-                $img.css("width", width * ratio)
-                $img.css("height", maxHeight)
+        if delta_x <= delta_y
+            $img.css("height", maxHeight)
+        else
+            $img.css("width", maxWidth)
 
     getImageSize = ($img, done) ->
         loadedHandler = ->
@@ -39,15 +54,36 @@ class Dashing.BigImage extends Dashing.Widget
         return if !@maxWidth or !@maxHeight
         draw this
 
+    makeVideo = (url, type) ->
+        return $('
+            <video preload="auto" autoplay="autoplay" muted="muted" loop="loop" webkit-playsinline>
+                <source src="' + url + '" type="' + type + '">
+            </video>
+        ')
+
     draw = (self) ->
         $el = $(self.node)
-        $img = $(self.node).find('img')
 
-        # Load the image
-        $img.remove()
-        $img = $('<img src="' + self.get("image") + '"/>')
+        needResize = false
+
+        # Remove the old image
+        $el.find('img').remove()
+        $el.find('video').remove()
+
+        # Load the new image
+        imageUrl = self.get("image")
+        if endsWith imageUrl, ".mp4"
+            $img = makeVideo imageUrl, 'video/mp4'
+        else if endsWith imageUrl, ".gifv"
+            imageUrl = imageUrl[0...-5] + ".mp4"
+            $img = makeVideo imageUrl, 'video/mp4'
+        else
+            # Need to resize images to preserve aspect ration
+            needResize = true
+            $img = $('<img src="' + self.get("image") + '"/>')
         $el.append $img
 
-        # Resize the image
-        getImageSize $img, (width, height) =>
-            resizeImage $img, self.maxWidth, self.maxHeight, self.get 'max'
+        if needResize
+            # Resize the image
+            getImageSize $img, (width, height) =>
+                resizeImage $img, self.maxWidth, self.maxHeight, self.get 'max'
