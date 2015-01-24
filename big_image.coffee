@@ -26,6 +26,7 @@ class Dashing.BigImage extends Dashing.Widget
 
         if delta_x <= delta_y
             $img.css("height", maxHeight)
+            $img.css("width", maxWidth)
         else
             $img.css("width", maxWidth)
 
